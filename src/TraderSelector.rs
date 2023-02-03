@@ -1,53 +1,124 @@
-use gtk::prelude::*;
+use std::borrow::Borrow;
+use std::convert::identity;
+use std::ops::Deref;
+use std::process::{Command, Stdio};
+use std::rc::Rc;
+use gtk4::{gio, ListItem, Orientation, StringObject};
+use gtk4::glib::{clone, GString};
 use relm4::*;
-
-// List of actions to which the components respond
-#[derive(Debug)]
-enum TraderSelectorMsg {
-
-}
+use gtk4::prelude::*;
+use crate::Consts::GlobalState;
+use crate::GlobalMessages::{CallBack, GlobalMsg};
+use crate::TraderState::{TraderStateModel};
 
 // Values and other Components stored inside this Component
-struct TraderSelectorModel {
-
+pub struct TraderSelectorModel {
+    traders : Vec<String>,
+    currentTraderCache : Option<String>,
+    traderState : GlobalState<TraderStateModel>,
 }
 
 // List of widgets inside the component
-struct TraderSelectorWidgets {
+pub struct TraderSelectorWidgets {}
 
+impl TraderSelectorModel {
+    fn clos(&mut self,i : Option<String>){
+        self.currentTraderCache = i;
+    }
 }
 
 impl SimpleComponent for TraderSelectorModel {
-    type Init = ();
-    type Input = TraderSelectorMsg;
+    
+    type Init = (Vec<String>,GlobalState<TraderStateModel>);
+    type Input = GlobalMsg;
     type Output = ();
     type Widgets = TraderSelectorWidgets;
     type Root = gtk::Box;
     
     // initialize the root widget where the rest of the component will reside
     fn init_root() -> <Self as relm4::SimpleComponent>::Root {
-        gkt::Box::builder().orientation(gtk4::Orientation::Vertical).build()
+        gtk::Box::builder().orientation(gtk4::Orientation::Horizontal).build()
     }
+    
     
     // define how the state of the component change or what to do in response to an event
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
-        
+            GlobalMsg::NewTrader(tr) => {self.traderState.emit(GlobalMsg::SetCurrentTrader(Some(tr.clone())))}
+            
+            GlobalMsg::RunTraderPressed => {self.traderState.emit(GlobalMsg::GetCurrentTrader(
+                CallBack::From(clone!(@strong sender => move |x:Option<String>| {
+                    sender.input(GlobalMsg::GetCurrentTraderResponse(x))
+                }))
+            ))}
+            
+            GlobalMsg::GetCurrentTraderResponse(tr) => {
+                match tr {
+                    None => {println!("None")}
+                    Some(t) => {println!("{}",t)}
+                }
+            },
+            _ => {}
         }
     }
     
     // define how the component is structured
     fn init(init: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
         let model = TraderSelectorModel {
-        
+            traders : init.0,
+            traderState : init.1,
+            currentTraderCache: None,
         };
         
         // initialize widgets and components
+        let frame = gtk::Frame::builder()
+            .label("Trader")
+            .sensitive(true)
+            .build();
         
-        let widgets = TraderSelectorWidgets {
+        // create a box to give to the frame as a child
+        let frame_child_box = gtk::Box::new(gtk::Orientation::Horizontal, 5);
         
-        };
+        // convert a Vec<String> to a &[&str]
+        let vec_strs = model.traders.iter().map(|x|  x.as_str() ).collect::<Vec<&str>>().clone();
+        let strs : &[&str] = vec_strs.as_slice();
+        
+        // define the list model for the dropdown
+        let trader_list_model = gtk4::StringList::new(strs);
+        
+        let trader_dropdown = gtk::DropDown::builder()
+            .model(&trader_list_model)
+            .width_request(150)
+            .build();
+        
+        trader_dropdown.connect_selected_item_notify(clone!(@strong sender, @strong trader_dropdown => move |_| {
+            if let Some(obj) = trader_dropdown.selected_item() {
+                if let Ok(s) = obj.dynamic_cast::<StringObject>() {
+                    sender.input(GlobalMsg::NewTrader(s.string().to_string()));
+                }
+            }
+        }));
+        
+        
+        // define a button to run a trader
+        let run_button = gtk4::Button::builder()
+            .label("Run")
+            .width_request(50)
+            .margin_start(100)
+            .build();
+        run_button.connect_clicked(clone!(@strong sender => move |_| {
+            sender.input(GlobalMsg::RunTraderPressed);
+        }));
+        
+        frame_child_box.append(&trader_dropdown);
+        frame_child_box.append(&run_button);
+        
+        frame.set_child(Some(&frame_child_box));
+        root.append(&frame);
+        
+        let widgets = TraderSelectorWidgets {};
         
         ComponentParts { model, widgets }
     }
+}
      
