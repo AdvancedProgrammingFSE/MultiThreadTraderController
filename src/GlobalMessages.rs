@@ -5,10 +5,19 @@ use relm4::*;
 
 #[derive(Debug)]
 pub enum GlobalMsg {
-	GetCurrentTraderResponse(Option<String>),
-	SetCurrentTrader(Option<String>),
-	GetCurrentTrader(CallBack<Option<String>>),
-	NewTrader(String),
+	
+	SetSelectedTrader(String),
+	GetSelectedTrader(CallBack<Option<String>>),
+	GetSelectedTraderResponse(Option<String>),
+	
+	AddRunningTraders(String),
+	GetRunningTraders(CallBack<Vec<String>>),
+	GetRunningTradersResponse(Vec<String>),
+	
+	SetSelectedVisualizer(String),
+	
+	
+	RunVisualizerPressed,
 	RunTraderPressed
 }
 

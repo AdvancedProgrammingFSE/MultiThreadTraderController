@@ -11,8 +11,7 @@ pub enum AppMsg {}
 
 // Values and other Components stored inside this Component
 pub struct AppModel {
-    tradersDropDown1: Controller<TraderSelectorModel>,
-	tradersDropDown2: Controller<TraderSelectorModel>
+	tradersDropDown: Controller<TraderSelectorModel>
 }
 
 // List of widgets inside the component
@@ -43,8 +42,7 @@ impl SimpleComponent for AppModel {
 		let stt= Rc::new(TraderStateModel::builder().detach_worker(()).detach());
 		
 		let model = AppModel {
-            tradersDropDown1: TraderSelectorModel::builder().launch((vec!["aaaaa".to_string(), "bbbbbbbbbbbbbbbb".to_string(), "c".to_string()], stt.clone())).detach(),
-			tradersDropDown2: TraderSelectorModel::builder().launch((vec!["trader1".to_string(), "trader2".to_string()], stt.clone())).detach()
+			tradersDropDown: TraderSelectorModel::builder().launch((vec!["trader1".to_string(), "trader2".to_string()], stt.clone())).detach()
         };
 		
 		// initialize widgets and components
@@ -57,8 +55,8 @@ impl SimpleComponent for AppModel {
             .margin_top(GLOBAL_MARGIN)
             .build();
         root.set_child(Some(&rootbox));
-        rootbox.append(model.tradersDropDown1.widget());
-		rootbox.append(model.tradersDropDown2.widget());
+        
+		rootbox.append(model.tradersDropDown.widget());
         
 		let widgets = AppWidgets {};
 		

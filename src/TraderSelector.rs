@@ -7,8 +7,10 @@ use gtk4::{gio, ListItem, Orientation, StringObject};
 use gtk4::glib::{clone, GString};
 use relm4::*;
 use gtk4::prelude::*;
+use gtk4::ShortcutScope::Global;
 use crate::Consts::GlobalState;
 use crate::GlobalMessages::{CallBack, GlobalMsg};
+use crate::RunningTradersContainer::RunningTradersContainer;
 use crate::TraderState::{TraderStateModel};
 
 // Values and other Components stored inside this Component
@@ -16,23 +18,18 @@ pub struct TraderSelectorModel {
     traders : Vec<String>,
     currentTraderCache : Option<String>,
     traderState : GlobalState<TraderStateModel>,
+    runningTradersList : Controller<RunningTradersContainer>
 }
 
 // List of widgets inside the component
-pub struct TraderSelectorWidgets {}
-
-impl TraderSelectorModel {
-    fn clos(&mut self,i : Option<String>){
-        self.currentTraderCache = i;
-    }
-}
+//pub struct TraderSelectorWidgets {}
 
 impl SimpleComponent for TraderSelectorModel {
     
     type Init = (Vec<String>,GlobalState<TraderStateModel>);
     type Input = GlobalMsg;
-    type Output = ();
-    type Widgets = TraderSelectorWidgets;
+    type Output = GlobalMsg;
+    type Widgets = ();
     type Root = gtk::Box;
     
     // initialize the root widget where the rest of the component will reside
@@ -44,18 +41,25 @@ impl SimpleComponent for TraderSelectorModel {
     // define how the state of the component change or what to do in response to an event
     fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
-            GlobalMsg::NewTrader(tr) => {self.traderState.emit(GlobalMsg::SetCurrentTrader(Some(tr.clone())))}
+            GlobalMsg::SetSelectedTrader(tr) => {self.traderState.emit(GlobalMsg::SetSelectedTrader(tr.clone()))}
             
-            GlobalMsg::RunTraderPressed => {self.traderState.emit(GlobalMsg::GetCurrentTrader(
+            GlobalMsg::RunTraderPressed => {self.traderState.emit(GlobalMsg::GetSelectedTrader(
                 CallBack::From(clone!(@strong sender => move |x:Option<String>| {
-                    sender.input(GlobalMsg::GetCurrentTraderResponse(x))
+                    sender.input(GlobalMsg::GetSelectedTraderResponse(x))
                 }))
             ))}
             
-            GlobalMsg::GetCurrentTraderResponse(tr) => {
+            GlobalMsg::GetSelectedTraderResponse(tr) => {
                 match tr {
                     None => {println!("None")}
-                    Some(t) => {println!("{}",t)}
+                    Some(t) => {
+                        // Calls to spawn the trader
+                        // todo
+                        
+                        self.traderState.emit(GlobalMsg::AddRunningTraders(t.clone()));
+                        self.runningTradersList.emit(GlobalMsg::AddRunningTraders(t.clone()));
+                        //sender.input(GlobalMsg::AddRunningTraders(t.clone()));
+                    }
                 }
             },
             _ => {}
@@ -66,8 +70,9 @@ impl SimpleComponent for TraderSelectorModel {
     fn init(init: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
         let model = TraderSelectorModel {
             traders : init.0,
-            traderState : init.1,
+            traderState : init.1.clone(),
             currentTraderCache: None,
+            runningTradersList : RunningTradersContainer::builder().launch(init.1.clone()).forward(sender.input_sender(),identity)
         };
         
         // initialize widgets and components
@@ -91,10 +96,12 @@ impl SimpleComponent for TraderSelectorModel {
             .width_request(150)
             .build();
         
+        // connect the selected item notification to the dropdown
+        // this way it can store in the global state the string of the selected trader
         trader_dropdown.connect_selected_item_notify(clone!(@strong sender, @strong trader_dropdown => move |_| {
             if let Some(obj) = trader_dropdown.selected_item() {
                 if let Ok(s) = obj.dynamic_cast::<StringObject>() {
-                    sender.input(GlobalMsg::NewTrader(s.string().to_string()));
+                    sender.input(GlobalMsg::SetSelectedTrader(s.string().to_string()));
                 }
             }
         }));
@@ -114,11 +121,16 @@ impl SimpleComponent for TraderSelectorModel {
         frame_child_box.append(&run_button);
         
         frame.set_child(Some(&frame_child_box));
-        root.append(&frame);
         
-        let widgets = TraderSelectorWidgets {};
+        let outer_box = gtk::Box::new(gtk::Orientation::Vertical,5);
+        outer_box.append(&frame);
+        outer_box.append(model.runningTradersList.widget());
         
-        ComponentParts { model, widgets }
+        root.append(&outer_box);
+        
+        //let widgets = TraderSelectorWidgets {};
+        
+        ComponentParts { model, widgets: () }
     }
 }
      

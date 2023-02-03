@@ -3,6 +3,7 @@ use gtk4::prelude::*;
 use relm4::*;
 use crate::GlobalMessages::GlobalMsg;
 
+#[derive(Debug)]
 pub struct TraderStateModel {
 	currentTrader : Option<String>,
 	runningTraders : Vec<String>
@@ -23,13 +24,17 @@ impl Worker for TraderStateModel {
 	fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
 		match msg {
 			
-			GlobalMsg::SetCurrentTrader(s) => {
-				self.currentTrader = s.clone();
+			GlobalMsg::SetSelectedTrader(s) => {
+				self.currentTrader = Some(s.clone());
 			},
 			
-			GlobalMsg::GetCurrentTrader(mut f) => {
+			GlobalMsg::GetSelectedTrader(mut f) => {
 				println!("get request received");
 				f.call(self.currentTrader.clone());
+			}
+			
+			GlobalMsg::AddRunningTraders(s) => {
+				self.runningTraders.push(s.clone())
 			}
 			
 			_ => {}

@@ -6,6 +6,8 @@ mod App;
 mod Consts;
 mod TraderState;
 mod GlobalMessages;
+mod RunningTraderItem;
+mod RunningTradersContainer;
 
 fn main() {
     let app = RelmApp::new("testApp");
