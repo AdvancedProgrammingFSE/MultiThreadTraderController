@@ -8,7 +8,7 @@ use gtk4::glib::{clone, GString};
 use relm4::*;
 use gtk4::prelude::*;
 use gtk4::ShortcutScope::Global;
-use crate::Consts::GlobalState;
+use crate::Consts::{GLOBAL_MARGIN, GlobalState};
 use crate::GlobalMessages::{CallBack, GlobalMsg};
 use crate::RunningTradersContainer::RunningTradersContainer;
 use crate::TraderState::{TraderStateModel};
@@ -56,7 +56,9 @@ impl SimpleComponent for TraderSelectorModel {
                         // Calls to spawn the trader
                         // todo
                         
+                        // add to the global state the trader
                         self.traderState.emit(GlobalMsg::AddRunningTraders(t.clone()));
+                        // notify the trader list of the creation of a new trader process
                         self.runningTradersList.emit(GlobalMsg::AddRunningTraders(t.clone()));
                         //sender.input(GlobalMsg::AddRunningTraders(t.clone()));
                     }
@@ -82,7 +84,14 @@ impl SimpleComponent for TraderSelectorModel {
             .build();
         
         // create a box to give to the frame as a child
-        let frame_child_box = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+        let frame_child_box = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .spacing(5)
+            .margin_end(GLOBAL_MARGIN)
+            .margin_bottom(GLOBAL_MARGIN)
+            .margin_top(GLOBAL_MARGIN)
+            .margin_start(GLOBAL_MARGIN)
+            .build();
         
         // convert a Vec<String> to a &[&str]
         let vec_strs = model.traders.iter().map(|x|  x.as_str() ).collect::<Vec<&str>>().clone();

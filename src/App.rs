@@ -1,5 +1,7 @@
 use std::rc::Rc;
+use gtk4::glib;
 use gtk4::prelude::*;
+use gtk4::subclass::prelude::InstanceStructExt;
 use relm4::*;
 use crate::Consts::GLOBAL_MARGIN;
 use crate::TraderSelector::TraderSelectorModel;
@@ -55,6 +57,10 @@ impl SimpleComponent for AppModel {
             .margin_top(GLOBAL_MARGIN)
             .build();
         root.set_child(Some(&rootbox));
+		
+		let t = glib::Object::builder().imp().graph;
+		
+		
         
 		rootbox.append(model.tradersDropDown.widget());
         

@@ -24,6 +24,7 @@ impl SimpleComponent for RunningTradersContainer {
 		gtk::Box::new(gtk::Orientation::Vertical,5)
 	}
 	
+	// define the structure of the controller
 	fn init(init: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
 		let model = Self {
 			running_traders: FactoryVecDeque::new(gtk::Box::new(gtk::Orientation::Vertical, 5), sender.input_sender()),
@@ -44,7 +45,6 @@ impl SimpleComponent for RunningTradersContainer {
 	fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
 		match message {
 			GlobalMsg::AddRunningTraders(t) => {
-				println!("got");
 				self.running_traders.guard().push_front((t,vec!["vis1".to_string(),"vis2".to_string()]));
 			},
 			_ => {}

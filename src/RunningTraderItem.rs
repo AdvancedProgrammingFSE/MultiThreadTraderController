@@ -3,6 +3,7 @@ use gtk4::prelude::*;
 use gtk4::{gio, ListItem, Orientation, StringObject};
 use relm4::*;
 use relm4::factory::{DynamicIndex, FactoryComponent, FactoryView};
+use crate::Consts::GLOBAL_MARGIN;
 use crate::GlobalMessages::GlobalMsg;
 
 #[derive(Debug)]
@@ -37,7 +38,14 @@ impl FactoryComponent for RunningTraderItem {
 	}
 	
 	fn init_root(&self) -> Self::Root {
-		gtk::Box::new(gtk::Orientation::Horizontal, 5)
+		gtk::Box::builder()
+			.orientation(gtk::Orientation::Horizontal)
+			.spacing(5)
+			.margin_end(GLOBAL_MARGIN)
+			.margin_bottom(GLOBAL_MARGIN)
+			.margin_top(GLOBAL_MARGIN)
+			.margin_start(GLOBAL_MARGIN)
+			.build()
 	}
 	
 	fn init_widgets(&mut self, index: &DynamicIndex, root: &Self::Root, returned_widget: &<Self::ParentWidget as FactoryView>::ReturnedWidget, sender: FactorySender<Self>) -> Self::Widgets {
