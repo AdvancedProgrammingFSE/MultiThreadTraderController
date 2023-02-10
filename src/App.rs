@@ -58,8 +58,6 @@ impl SimpleComponent for AppModel {
             .build();
         root.set_child(Some(&rootbox));
 		
-		let t = glib::Object::builder().imp().graph;
-		
 		
         
 		rootbox.append(model.tradersDropDown.widget());
