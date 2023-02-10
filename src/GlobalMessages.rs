@@ -2,6 +2,7 @@ use std::fmt::{Debug, Formatter};
 use gtk4::glib::Object;
 use gtk4::prelude::*;
 use relm4::*;
+use crate::Consts::{TraderProcessInfo, VisualizerProcessInfo};
 
 #[derive(Debug)]
 pub enum GlobalMsg {
@@ -10,12 +11,11 @@ pub enum GlobalMsg {
 	GetSelectedTrader(CallBack<Option<String>>),
 	GetSelectedTraderResponse(Option<String>),
 	
-	AddRunningTraders(String),
-	GetRunningTraders(CallBack<Vec<String>>),
-	GetRunningTradersResponse(Vec<String>),
+	AddRunningTraders(TraderProcessInfo),
+	GetRunningTraders(CallBack<Vec<TraderProcessInfo>>),
+	GetRunningTradersResponse(Vec<TraderProcessInfo>),
 	
-	SetSelectedVisualizer(String),
-	
+	SetSelectedVisualizer(VisualizerProcessInfo),
 	
 	RunVisualizerPressed,
 	RunTraderPressed

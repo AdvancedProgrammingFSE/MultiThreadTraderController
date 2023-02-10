@@ -11,3 +11,5 @@ relm4 = "0.5.0-rc.1"
 relm4-macros = "0.5.0-rc.1"
 relm4-components = "0.5.0-rc.1"
 tracker-macros = "0.2.0"
+serde = { version = "1.0.104", features = ["derive"] }
+serde_json = "1.0.48"

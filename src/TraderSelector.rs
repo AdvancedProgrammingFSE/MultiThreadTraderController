@@ -8,25 +8,28 @@ use gtk4::glib::{clone, GString};
 use relm4::*;
 use gtk4::prelude::*;
 use gtk4::ShortcutScope::Global;
-use crate::Consts::{GLOBAL_MARGIN, GlobalState};
+use crate::Consts::{GLOBAL_MARGIN, GlobalState, TraderProcessInfo, VisualizerProcessInfo};
 use crate::GlobalMessages::{CallBack, GlobalMsg};
 use crate::RunningTradersContainer::RunningTradersContainer;
 use crate::TraderState::{TraderStateModel};
 
 // Values and other Components stored inside this Component
 pub struct TraderSelectorModel {
-    traders : Vec<String>,
+    traders : Vec<TraderProcessInfo>,
     currentTraderCache : Option<String>,
     traderState : GlobalState<TraderStateModel>,
     runningTradersList : Controller<RunningTradersContainer>
 }
 
-// List of widgets inside the component
-//pub struct TraderSelectorWidgets {}
+pub struct TraderSelectorInput {
+    pub(crate) visualizers : Vec<VisualizerProcessInfo>,
+    pub(crate) traders : Vec<TraderProcessInfo>,
+    pub(crate) state : GlobalState<TraderStateModel>
+}
 
 impl SimpleComponent for TraderSelectorModel {
     
-    type Init = (Vec<String>,GlobalState<TraderStateModel>);
+    type Init = TraderSelectorInput;
     type Input = GlobalMsg;
     type Output = GlobalMsg;
     type Widgets = ();
@@ -37,30 +40,50 @@ impl SimpleComponent for TraderSelectorModel {
         gtk::Box::builder().orientation(gtk4::Orientation::Horizontal).build()
     }
     
-    
     // define how the state of the component change or what to do in response to an event
-    fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
+    fn update(&mut self,
+              msg       : Self::Input,
+              sender    : ComponentSender<Self>)
+    {
         match msg {
-            GlobalMsg::SetSelectedTrader(tr) => {self.traderState.emit(GlobalMsg::SetSelectedTrader(tr.clone()))}
+            GlobalMsg::SetSelectedTrader(tr) => {
+                self.traderState.emit(GlobalMsg::SetSelectedTrader(tr.clone()))
+            }
             
-            GlobalMsg::RunTraderPressed => {self.traderState.emit(GlobalMsg::GetSelectedTrader(
-                CallBack::From(clone!(@strong sender => move |x:Option<String>| {
-                    sender.input(GlobalMsg::GetSelectedTraderResponse(x))
-                }))
-            ))}
+            GlobalMsg::RunTraderPressed => {
+                self.traderState.emit(
+                    GlobalMsg::GetSelectedTrader(
+                        CallBack::From(
+                            clone!(@strong sender =>
+                                move |x:Option<String>| {
+                                    sender.input(GlobalMsg::GetSelectedTraderResponse(x))
+                                }
+                            )
+                        )
+                    )
+                )
+            }
             
             GlobalMsg::GetSelectedTraderResponse(tr) => {
                 match tr {
                     None => {println!("None")}
                     Some(t) => {
-                        // Calls to spawn the trader
-                        // todo
-                        
-                        // add to the global state the trader
-                        self.traderState.emit(GlobalMsg::AddRunningTraders(t.clone()));
-                        // notify the trader list of the creation of a new trader process
-                        self.runningTradersList.emit(GlobalMsg::AddRunningTraders(t.clone()));
-                        //sender.input(GlobalMsg::AddRunningTraders(t.clone()));
+                        let tt = self.traders.iter().find(|x| x.label == t);
+                        if let Some(trader) = tt {
+                            
+                            // add to the global state the trader
+                            self.traderState.emit(GlobalMsg::AddRunningTraders(TraderProcessInfo{
+                                label: trader.get_label(),
+                                path: trader.get_path(),
+                            }));
+                            
+                            // notify the trader list of the creation of a new trader process
+                            self.runningTradersList.emit(GlobalMsg::AddRunningTraders(TraderProcessInfo{
+                                label: trader.get_label(),
+                                path: trader.get_path(),
+                            }));
+                            //sender.input(GlobalMsg::AddRunningTraders(t.clone()));
+                        }
                     }
                 }
             },
@@ -69,12 +92,18 @@ impl SimpleComponent for TraderSelectorModel {
     }
     
     // define how the component is structured
-    fn init(init: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+    fn init(init    : Self::Init,
+            root    : &Self::Root,
+            sender  : ComponentSender<Self>)
+        -> ComponentParts<Self>
+    {
         let model = TraderSelectorModel {
-            traders : init.0,
-            traderState : init.1.clone(),
+            traders : init.traders,
+            traderState : init.state.clone(),
             currentTraderCache: None,
-            runningTradersList : RunningTradersContainer::builder().launch(init.1.clone()).forward(sender.input_sender(),identity)
+            runningTradersList : RunningTradersContainer::builder()
+                .launch((init.state.clone(),init.visualizers))
+                .forward(sender.input_sender(),identity)
         };
         
         // initialize widgets and components
@@ -94,31 +123,40 @@ impl SimpleComponent for TraderSelectorModel {
             .build();
         
         // convert a Vec<String> to a &[&str]
-        let vec_strs = model.traders.iter().map(|x|  x.as_str() ).collect::<Vec<&str>>().clone();
+        let vec_strs = model.traders
+            .iter()
+            .map(|x|  x.get_label().as_str() )
+            .collect::<Vec<&str>>()
+            .clone();
+        
         let strs : &[&str] = vec_strs.as_slice();
         
         // define the list model for the dropdown
         let trader_list_model = gtk4::StringList::new(strs);
         
         let trader_dropdown = gtk::DropDown::builder()
+            .selected(0)
             .model(&trader_list_model)
             .width_request(150)
             .build();
         
         // connect the selected item notification to the dropdown
         // this way it can store in the global state the string of the selected trader
-        trader_dropdown.connect_selected_item_notify(clone!(@strong sender, @strong trader_dropdown => move |_| {
-            if let Some(obj) = trader_dropdown.selected_item() {
-                if let Ok(s) = obj.dynamic_cast::<StringObject>() {
-                    sender.input(GlobalMsg::SetSelectedTrader(s.string().to_string()));
+        trader_dropdown.connect_selected_item_notify(
+            clone!(@strong sender, @strong trader_dropdown =>
+                move |_| {
+                    if let Some(obj) = trader_dropdown.selected_item() {
+                        if let Ok(s) = obj.dynamic_cast::<StringObject>() {
+                            sender.input(GlobalMsg::SetSelectedTrader(s.string().to_string()));
+                        }
+                    }
                 }
-            }
-        }));
-        
+            )
+        );
         
         // define a button to run a trader
         let run_button = gtk4::Button::builder()
-            .label("Run")
+            .label("Select")
             .width_request(50)
             .margin_start(100)
             .build();
@@ -136,8 +174,6 @@ impl SimpleComponent for TraderSelectorModel {
         outer_box.append(model.runningTradersList.widget());
         
         root.append(&outer_box);
-        
-        //let widgets = TraderSelectorWidgets {};
         
         ComponentParts { model, widgets: () }
     }

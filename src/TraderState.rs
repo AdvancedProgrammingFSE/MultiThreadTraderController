@@ -1,12 +1,13 @@
 use std::borrow::Borrow;
 use gtk4::prelude::*;
 use relm4::*;
+use crate::Consts::TraderProcessInfo;
 use crate::GlobalMessages::GlobalMsg;
 
 #[derive(Debug)]
 pub struct TraderStateModel {
 	currentTrader : Option<String>,
-	runningTraders : Vec<String>
+	runningTraders : Vec<TraderProcessInfo>
 }
 
 impl Worker for TraderStateModel {
@@ -34,7 +35,10 @@ impl Worker for TraderStateModel {
 			}
 			
 			GlobalMsg::AddRunningTraders(s) => {
-				self.runningTraders.push(s.clone())
+				self.runningTraders.push(TraderProcessInfo {
+					label: s.label.clone(),
+					path: s.path.clone(),
+				})
 			}
 			
 			_ => {}

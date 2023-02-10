@@ -3,8 +3,8 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use gtk4::subclass::prelude::InstanceStructExt;
 use relm4::*;
-use crate::Consts::GLOBAL_MARGIN;
-use crate::TraderSelector::TraderSelectorModel;
+use crate::Consts::{GLOBAL_MARGIN, TraderProcessInfo, VisualizerProcessInfo};
+use crate::TraderSelector::{TraderSelectorInput, TraderSelectorModel};
 use crate::TraderState::TraderStateModel;
 
 // List of actions to which the components respond
@@ -19,9 +19,14 @@ pub struct AppModel {
 // List of widgets inside the component
 pub struct AppWidgets {}
 
+pub struct AppInput {
+	pub(crate) visualizers : Vec<VisualizerProcessInfo>,
+	pub(crate) traders : Vec<TraderProcessInfo>
+}
+
 impl SimpleComponent for AppModel {
-	type Init = ();
-	type Input = AppMsg;
+	type Init = AppInput;
+	type Input = ();
 	type Output = ();
 	type Widgets = AppWidgets;
 	type Root = gtk::Window;
@@ -34,17 +39,29 @@ impl SimpleComponent for AppModel {
 	}
 	
 	// define how the state of the component change or what to do in response to an event
-	fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
-		match msg {}
-	}
+	fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {}
 	
 	// define how the component is structured
-	fn init(init: Self::Init, root: &Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
-		
-		let stt= Rc::new(TraderStateModel::builder().detach_worker(()).detach());
+	fn init(init    : Self::Init,
+	        root    : &Self::Root,
+	        sender  : ComponentSender<Self>)
+		-> ComponentParts<Self>
+	{
+		// create and share the worker that represent the global state
+		let stt= Rc::new(
+			TraderStateModel::builder()
+			.detach_worker(())
+			.detach()
+		);
 		
 		let model = AppModel {
-			tradersDropDown: TraderSelectorModel::builder().launch((vec!["trader1".to_string(), "trader2".to_string()], stt.clone())).detach()
+			tradersDropDown: TraderSelectorModel::builder()
+				.launch(TraderSelectorInput{
+					visualizers: init.visualizers,
+					traders: init.traders,
+					state: stt.clone(),
+				})
+				.detach()
         };
 		
 		// initialize widgets and components
