@@ -1,13 +1,11 @@
-use std::borrow::Borrow;
 use std::process::Stdio;
 use gtk4::glib::clone;
 use gtk4::prelude::*;
-use gtk4::{gio, ListItem, Orientation, StringObject};
-use gtk4::AccessibleRole::Command;
+use gtk4::{StringObject};
 use relm4::*;
 use relm4::factory::{DynamicIndex, FactoryComponent, FactoryView};
-use crate::Consts::{GLOBAL_MARGIN, TraderProcessInfo, VisualizerProcessInfo};
-use crate::GlobalMessages::GlobalMsg;
+use crate::misc::{gtk_horizontal_box, TraderProcessInfo, VisualizerProcessInfo};
+use crate::global_messages::GlobalMsg;
 
 
 
@@ -18,11 +16,7 @@ pub struct RunningTraderItem {
 	selected_visualizer : Option<VisualizerProcessInfo>
 }
 
-pub struct RunningTraderItemWidgets {
-	label : gtk::Label,
-	visualizers_dropdown : gtk::DropDown,
-	run_visualizer_button : gtk::Button
-}
+pub struct RunningTraderItemWidgets {}
 
 impl FactoryComponent for RunningTraderItem {
 	type ParentWidget = gtk::Box;
@@ -34,10 +28,10 @@ impl FactoryComponent for RunningTraderItem {
 	type Root = gtk::Box;
 	type Widgets = RunningTraderItemWidgets;
 	
-	// initialize the model of the compoonent (itself basically)
+	// initialize the model of the component (itself basically)
 	fn init_model(init      : Self::Init,
-	              index     : &DynamicIndex,
-	              sender    : FactorySender<Self>) -> Self
+	              _index     : &DynamicIndex,
+	              _sender    : FactorySender<Self>) -> Self
 	{
 		Self{
 			trader : init.0,
@@ -48,40 +42,33 @@ impl FactoryComponent for RunningTraderItem {
 	
 	// crete the root widget, where all the other widgets will be added
 	fn init_root(&self) -> Self::Root {
-		gtk::Box::builder()
-			.orientation(gtk::Orientation::Horizontal)
-			.spacing(5)
-			.margin_end(GLOBAL_MARGIN)
-			.margin_bottom(GLOBAL_MARGIN)
-			.margin_top(GLOBAL_MARGIN)
-			.margin_start(GLOBAL_MARGIN)
-			.build()
+		gtk_horizontal_box()
 	}
 	
 	// initialize and add all the other widgets
 	// also connect events
 	fn init_widgets(&mut self,
-	                index           : &DynamicIndex,
-	                root            : &Self::Root,
-	                returned_widget : &<Self::ParentWidget as FactoryView>::ReturnedWidget,
-	                sender          : FactorySender<Self>) -> Self::Widgets
+	                _index           : &DynamicIndex,
+	                root             : &Self::Root,
+	                _returned_widget : &<Self::ParentWidget as FactoryView>::ReturnedWidget,
+	                sender           : FactorySender<Self>) -> Self::Widgets
 	{
 		
 		let label = gtk::Label::builder()
 			.label(&*self.trader.get_label())
 			.build();
 		
-		// convert a Vec<String> to a &[&str] because the dropdwawn widget need it
-		let vec_strs = self.visualizers
-			.iter()
-			.map(|x|  x.get_label().as_str() )
-			.collect::<Vec<&str>>()
-			.clone();
+		// convert a Vec<String> to a &[&str] because the dropdown widget need it
+		let vec_str = self.visualizers
+		                  .iter()
+		                  .map(|x|  x.label.as_str() )
+		                  .collect::<Vec<&str>>()
+		                  .clone();
 		
-		let strs : &[&str] = vec_strs.as_slice();
+		let array_str: &[&str] = vec_str.as_slice();
 		
 		// define the list model for the dropdown
-		let visualizers_list_model = gtk4::StringList::new(strs);
+		let visualizers_list_model = gtk4::StringList::new(array_str);
 		
 		let visualizers_dropdown = gtk::DropDown::builder()
 			.selected(0)
@@ -89,13 +76,20 @@ impl FactoryComponent for RunningTraderItem {
 			.width_request(150)
 			.build();
 		
+		let visualizers_list_clone = self.visualizers.clone();
+		
 		// respond to select event
 		visualizers_dropdown.connect_selected_item_notify(
-			clone!(@strong sender, @strong visualizers_dropdown =>
+			clone!(@strong sender, @strong visualizers_dropdown, @strong visualizers_list_clone =>
 				move |_| {
 		            if let Some(obj) = visualizers_dropdown.selected_item() {
 		                if let Ok(s) = obj.dynamic_cast::<StringObject>() {
-							let vis = self.visualizers.iter().find(|v| v.label == s.string().to_string());
+							
+							// search for the visualizer with the label equal to s
+							let vis = visualizers_list_clone
+								.iter()
+								.find(|v| v.label == s.string().to_string());
+							
 							if let Some(v) = vis {
 								sender.input(GlobalMsg::SetSelectedVisualizer(VisualizerProcessInfo{
 									label : v.get_label(),
@@ -114,18 +108,15 @@ impl FactoryComponent for RunningTraderItem {
             sender.input(GlobalMsg::RunVisualizerPressed);
 		}));
 		
-		root.append(&label);
-		root.append(&visualizers_dropdown);
-		root.append(&run_visualizer_button);
+		let _ = root.append(&label);
+		let _ = root.append(&visualizers_dropdown);
+		let _ = root.append(&run_visualizer_button);
 		
 		RunningTraderItemWidgets {
-			label,
-			visualizers_dropdown,
-			run_visualizer_button,
 		}
 	}
 	
-	fn update(&mut self, msg: Self::Input, sender: FactorySender<Self>) {
+	fn update(&mut self, msg: Self::Input, _sender: FactorySender<Self>) {
 		match msg {
 			GlobalMsg::SetSelectedVisualizer(v) => self.selected_visualizer = Some(v),
 			GlobalMsg::RunVisualizerPressed => {
@@ -137,8 +128,10 @@ impl FactoryComponent for RunningTraderItem {
 							.stdout(Stdio::piped()).spawn();
 						
 						if let Ok(process) = trader_process {
-							let visualizer_process = std::process::Command::new(visualizer.get_path())
-								.stdin(process.stdout.unwrap());
+							if let Some(stdout_pipe) = process.stdout {
+								std::process::Command::new(visualizer.get_path())
+									.stdin(stdout_pipe);
+							}
 						}
 					}
 				}

@@ -1,11 +1,11 @@
 use std::rc::Rc;
-use gtk4::glib;
+
 use gtk4::prelude::*;
-use gtk4::subclass::prelude::InstanceStructExt;
+
 use relm4::*;
-use crate::Consts::{GLOBAL_MARGIN, TraderProcessInfo, VisualizerProcessInfo};
-use crate::TraderSelector::{TraderSelectorInput, TraderSelectorModel};
-use crate::TraderState::TraderStateModel;
+use crate::misc::{GLOBAL_MARGIN, TraderProcessInfo, VisualizerProcessInfo};
+use crate::trader_selector::{TraderSelectorInput, TraderSelectorModel};
+use crate::trader_state::TraderStateModel;
 
 // List of actions to which the components respond
 #[derive(Debug)]
@@ -13,7 +13,7 @@ pub enum AppMsg {}
 
 // Values and other Components stored inside this Component
 pub struct AppModel {
-	tradersDropDown: Controller<TraderSelectorModel>
+	traders_drop_down: Controller<TraderSelectorModel>
 }
 
 // List of widgets inside the component
@@ -25,11 +25,11 @@ pub struct AppInput {
 }
 
 impl SimpleComponent for AppModel {
-	type Init = AppInput;
 	type Input = ();
 	type Output = ();
-	type Widgets = AppWidgets;
+	type Init = AppInput;
 	type Root = gtk::Window;
+	type Widgets = AppWidgets;
 	
 	// initialize the root widget where the rest of the component will reside
 	fn init_root() -> <Self as relm4::SimpleComponent>::Root {
@@ -38,13 +38,10 @@ impl SimpleComponent for AppModel {
             .build()
 	}
 	
-	// define how the state of the component change or what to do in response to an event
-	fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {}
-	
 	// define how the component is structured
-	fn init(init    : Self::Init,
-	        root    : &Self::Root,
-	        sender  : ComponentSender<Self>)
+	fn init(init     : Self::Init,
+	        root     : &Self::Root,
+	        _sender  : ComponentSender<Self>)
 		-> ComponentParts<Self>
 	{
 		// create and share the worker that represent the global state
@@ -55,7 +52,7 @@ impl SimpleComponent for AppModel {
 		);
 		
 		let model = AppModel {
-			tradersDropDown: TraderSelectorModel::builder()
+			traders_drop_down: TraderSelectorModel::builder()
 				.launch(TraderSelectorInput{
 					visualizers: init.visualizers,
 					traders: init.traders,
@@ -65,7 +62,7 @@ impl SimpleComponent for AppModel {
         };
 		
 		// initialize widgets and components
-		let rootbox = gtk::Box::builder()
+		let root_box = gtk::Box::builder()
 		    .orientation(gtk::Orientation::Vertical)
             .spacing(10)
             .margin_start(GLOBAL_MARGIN)
@@ -73,12 +70,11 @@ impl SimpleComponent for AppModel {
             .margin_end(GLOBAL_MARGIN)
             .margin_top(GLOBAL_MARGIN)
             .build();
-        root.set_child(Some(&rootbox));
+        root.set_child(Some(&root_box));
 		
 		
-        
-		rootbox.append(model.tradersDropDown.widget());
-        
+		let _ = root_box.append(model.traders_drop_down.widget());
+  
 		let widgets = AppWidgets {};
 		
 		ComponentParts { model, widgets }

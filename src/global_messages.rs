@@ -1,8 +1,6 @@
 use std::fmt::{Debug, Formatter};
-use gtk4::glib::Object;
-use gtk4::prelude::*;
-use relm4::*;
-use crate::Consts::{TraderProcessInfo, VisualizerProcessInfo};
+
+use crate::misc::{TraderProcessInfo, VisualizerProcessInfo};
 
 #[derive(Debug)]
 pub enum GlobalMsg {
@@ -12,8 +10,8 @@ pub enum GlobalMsg {
 	GetSelectedTraderResponse(Option<String>),
 	
 	AddRunningTraders(TraderProcessInfo),
-	GetRunningTraders(CallBack<Vec<TraderProcessInfo>>),
-	GetRunningTradersResponse(Vec<TraderProcessInfo>),
+	//GetRunningTraders(CallBack<Vec<TraderProcessInfo>>),
+	//GetRunningTradersResponse(Vec<TraderProcessInfo>),
 	
 	SetSelectedVisualizer(VisualizerProcessInfo),
 	
@@ -31,7 +29,7 @@ impl<I> CallBack<I> {
 	pub fn call(&mut self,s: I) {
 		(self.callback)(s);
 	}
-	pub fn From (f: impl FnMut(I) + 'static) -> Self {
+	pub fn from(f: impl FnMut(I) + 'static) -> Self {
 			CallBack {
 				callback : Box::new(f)
 			}

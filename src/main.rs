@@ -1,16 +1,17 @@
 use std::fs;
 use relm4::RelmApp;
-use crate::App::{AppInput, AppModel};
+use crate::app::{AppInput, AppModel};
 
-mod TraderSelector;
-mod App;
-mod Consts;
-mod TraderState;
-mod GlobalMessages;
-mod RunningTraderItem;
-mod RunningTradersContainer;
+mod trader_selector;
+mod app;
+mod misc;
+mod trader_state;
+mod global_messages;
+mod running_trader_item;
+mod running_traders_container;
+
 use serde::Deserialize;
-use crate::Consts::{TraderProcessInfo, VisualizerProcessInfo};
+use crate::misc::{TraderProcessInfo, VisualizerProcessInfo};
 
 #[derive(Debug, Deserialize)]
 struct JsonFileStructure {
@@ -18,7 +19,7 @@ struct JsonFileStructure {
     visualizers : Vec<(String,String)>
 }
 
-pub fn parseInputFile() -> AppInput{
+pub fn parse_input_file() -> AppInput{
     
     let content = fs::read_to_string("./config.json");
     
@@ -46,6 +47,6 @@ pub fn parseInputFile() -> AppInput{
 }
 
 fn main() {
-    let app = RelmApp::new("testApp");
-    app.run::<AppModel>(parseInputFile());
+    let app = RelmApp::new("Controller");
+    app.run::<AppModel>(parse_input_file());
 }

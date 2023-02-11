@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use relm4::WorkerController;
+use relm4::{gtk, WorkerController};
 
 pub type GlobalState<T> = Rc<WorkerController<T>>;
 
@@ -26,4 +26,15 @@ pub struct VisualizerProcessInfo {
 impl VisualizerProcessInfo {
 	pub fn get_label(&self) -> String { self.label.clone() }
 	pub fn get_path(&self) -> String { self.path.clone() }
+}
+
+pub fn gtk_horizontal_box() -> gtk::Box {
+	gtk::Box::builder()
+		.orientation(gtk::Orientation::Horizontal)
+		.spacing(5)
+		.margin_end(GLOBAL_MARGIN)
+		.margin_bottom(GLOBAL_MARGIN)
+		.margin_top(GLOBAL_MARGIN)
+		.margin_start(GLOBAL_MARGIN)
+		.build()
 }
