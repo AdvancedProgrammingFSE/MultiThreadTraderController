@@ -4,22 +4,20 @@ use gtk4::glib::{clone};
 use relm4::*;
 use gtk4::prelude::*;
 
-use crate::misc::{GlobalState, gtk_horizontal_box, TraderProcessInfo, VisualizerProcessInfo};
-use crate::global_messages::{CallBack, GlobalMsg};
+use crate::misc::{gtk_horizontal_box, TraderProcessInfo, VisualizerProcessInfo};
+use crate::global_messages::{GlobalMsg};
 use crate::running_traders_container::RunningTradersContainer;
-use crate::trader_state::{TraderStateModel};
 
 // Values and other Components stored inside this Component
 pub struct TraderSelectorModel {
     traders : Vec<TraderProcessInfo>,
-    trader_state: GlobalState<TraderStateModel>,
-    running_traders_list: Controller<RunningTradersContainer>
+    running_traders_list: Controller<RunningTradersContainer>,
+    selected_trader: Option<TraderProcessInfo>
 }
 
 pub struct TraderSelectorInput {
     pub(crate) visualizers : Vec<VisualizerProcessInfo>,
-    pub(crate) traders : Vec<TraderProcessInfo>,
-    pub(crate) state : GlobalState<TraderStateModel>
+    pub(crate) traders : Vec<TraderProcessInfo>
 }
 
 impl SimpleComponent for TraderSelectorModel {
@@ -41,11 +39,12 @@ impl SimpleComponent for TraderSelectorModel {
         -> ComponentParts<Self>
     {
         let model = TraderSelectorModel {
-            traders : init.traders,
-            trader_state: init.state.clone(),
+            traders : init.traders.clone(),
+           // trader_state: init.state.clone(),
             running_traders_list: RunningTradersContainer::builder()
                 .launch(init.visualizers)
-                .forward(sender.input_sender(),identity)
+                .forward(sender.input_sender(),identity),
+            selected_trader: init.traders.first().cloned(),
         };
         
         // initialize widgets and components
@@ -75,6 +74,8 @@ impl SimpleComponent for TraderSelectorModel {
             .width_request(150)
             .build();
         
+        let traders_list_clone = model.traders.clone();
+        
         // connect the selected item notification to the dropdown
         // this way it can store in the global state the string of the selected trader
         trader_dropdown.connect_selected_item_notify(
@@ -82,7 +83,18 @@ impl SimpleComponent for TraderSelectorModel {
                 move |_| {
                     if let Some(obj) = trader_dropdown.selected_item() {
                         if let Ok(s) = obj.dynamic_cast::<StringObject>() {
-                            sender.input(GlobalMsg::SetSelectedTrader(s.string().to_string()));
+                            
+                            // search for the trader with the label equal to s
+							let tr = traders_list_clone
+								.iter()
+								.find(|v| v.label == s.string().to_string());
+                            
+                            if let Some(t) = tr {
+                                sender.input(GlobalMsg::SetSelectedTrader(TraderProcessInfo{
+                                    label : t.get_label(),
+									path : t.get_path()
+                                }));
+                            }
                         }
                     }
                 }
@@ -116,46 +128,19 @@ impl SimpleComponent for TraderSelectorModel {
     // define how the state of the component change or what to do in response to an event
     fn update(&mut self,
               msg       : Self::Input,
-              sender    : ComponentSender<Self>)
+              _sender    : ComponentSender<Self>)
     {
         match msg {
-            GlobalMsg::SetSelectedTrader(tr) => {
-                self.trader_state.emit(GlobalMsg::SetSelectedTrader(tr.clone()))
-            }
-            
+            GlobalMsg::SetSelectedTrader(tr) => self.selected_trader = Some(tr),
             GlobalMsg::RunTraderPressed => {
-                self.trader_state.emit(
-                    GlobalMsg::GetSelectedTrader(
-                        CallBack::from(
-                            clone!(@strong sender =>
-                                move |x:Option<String>| {
-                                    sender.input(GlobalMsg::GetSelectedTraderResponse(x))
-                                }
-                            )
-                        )
-                    )
-                )
-            }
-            
-            GlobalMsg::GetSelectedTraderResponse(tr) => {
-                match tr {
-                    None => {println!("None")}
-                    Some(t) => {
-                        let tt = self.traders.iter().find(|x| x.label == t);
-                        if let Some(trader) = tt {
-                            
-                            // add to the global state the trader
-                            self.trader_state.emit(GlobalMsg::AddRunningTraders(TraderProcessInfo{
-                                label: trader.get_label(),
-                                path: trader.get_path(),
-                            }));
-                            
-                            // notify the trader list of the creation of a new trader process
-                            self.running_traders_list.emit(GlobalMsg::AddRunningTraders(TraderProcessInfo{
-                                label: trader.get_label(),
-                                path: trader.get_path(),
-                            }));
-                        }
+                match &self.selected_trader {
+                    None => { println!("No trader selected") }
+                    Some(trader) => {
+                        // notify the trader list of the creation of a new trader process
+                        self.running_traders_list.emit(GlobalMsg::AddRunningTraders(TraderProcessInfo {
+                            label: trader.get_label(),
+                            path: trader.get_path(),
+                        }));
                     }
                 }
             },

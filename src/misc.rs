@@ -1,11 +1,8 @@
-use std::rc::Rc;
-use relm4::{gtk, WorkerController};
-
-pub type GlobalState<T> = Rc<WorkerController<T>>;
+use relm4::{gtk};
 
 pub const GLOBAL_MARGIN : i32 = 10;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct TraderProcessInfo {
 	pub label : String,
 	pub path : String

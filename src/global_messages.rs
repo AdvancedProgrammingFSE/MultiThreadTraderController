@@ -1,26 +1,19 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug};
 
 use crate::misc::{TraderProcessInfo, VisualizerProcessInfo};
 
 #[derive(Debug)]
 pub enum GlobalMsg {
-	
-	SetSelectedTrader(String),
-	GetSelectedTrader(CallBack<Option<String>>),
-	GetSelectedTraderResponse(Option<String>),
-	
+	SetSelectedTrader(TraderProcessInfo),
 	AddRunningTraders(TraderProcessInfo),
-	//GetRunningTraders(CallBack<Vec<TraderProcessInfo>>),
-	//GetRunningTradersResponse(Vec<TraderProcessInfo>),
-	
 	SetSelectedVisualizer(VisualizerProcessInfo),
-	
 	RunVisualizerPressed,
 	RunTraderPressed
 }
 
 
 // struct used to send a callback function with a Msg
+/*
 pub struct CallBack<I>{
 	pub callback: Box<dyn FnMut(I)>
 }
@@ -43,6 +36,8 @@ impl<I> Debug for CallBack<I> {
 }
 
 unsafe impl<I> Send for CallBack<I> {}
+*/
+
 
 
 

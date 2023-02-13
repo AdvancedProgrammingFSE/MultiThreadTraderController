@@ -1,11 +1,8 @@
-use std::rc::Rc;
-
 use gtk4::prelude::*;
 
 use relm4::*;
 use crate::misc::{GLOBAL_MARGIN, TraderProcessInfo, VisualizerProcessInfo};
 use crate::trader_selector::{TraderSelectorInput, TraderSelectorModel};
-use crate::trader_state::TraderStateModel;
 
 // List of actions to which the components respond
 #[derive(Debug)]
@@ -44,19 +41,11 @@ impl SimpleComponent for AppModel {
 	        _sender  : ComponentSender<Self>)
 		-> ComponentParts<Self>
 	{
-		// create and share the worker that represent the global state
-		let stt= Rc::new(
-			TraderStateModel::builder()
-			.detach_worker(())
-			.detach()
-		);
-		
 		let model = AppModel {
 			traders_drop_down: TraderSelectorModel::builder()
 				.launch(TraderSelectorInput{
 					visualizers: init.visualizers,
 					traders: init.traders,
-					state: stt.clone(),
 				})
 				.detach()
         };

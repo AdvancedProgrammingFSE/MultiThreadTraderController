@@ -5,7 +5,6 @@ use crate::app::{AppInput, AppModel};
 mod trader_selector;
 mod app;
 mod misc;
-mod trader_state;
 mod global_messages;
 mod running_trader_item;
 mod running_traders_container;

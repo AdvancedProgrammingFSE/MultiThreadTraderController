@@ -35,8 +35,8 @@ impl FactoryComponent for RunningTraderItem {
 	{
 		Self{
 			trader : init.0,
-			visualizers : init.1,
-			selected_visualizer : None
+			visualizers : init.1.clone(),
+			selected_visualizer : init.1.first().cloned()
 		}
 	}
 	
@@ -126,14 +126,18 @@ impl FactoryComponent for RunningTraderItem {
 						
 						let trader_process = std::process::Command::new(self.trader.get_path())
 							.stdout(Stdio::piped()).spawn();
-
-						println!("{:?}", trader_process);
 						
 						if let Ok(process) = trader_process {
 							if let Some(stdout_pipe) = process.stdout {
-								std::process::Command::new(visualizer.get_path())
+								let visualizer_process = std::process::Command::new(visualizer.get_path())
 									.stdin(stdout_pipe).spawn();
+								
+								if let Err(err) = visualizer_process {
+									println!("visualizer : {} -> {:?}",visualizer.get_path(),err);
+								}
 							}
+						} else {
+							println!("trader : {} -> {:?}",self.trader.get_path(),trader_process.err().unwrap());
 						}
 					}
 				}
