@@ -1,0 +1,11 @@
+{
+  "traders" : [
+    ["trader_Anna", "/Users/olha/CLionProjects/Trader-Giacomello/run.sh"],
+    ["trader_Anna2", "/Users/olha/CLionProjects/Trader-Giacomello/run.sh"],
+    ["trader_Davide", "/Users/olha/CLionProjects/Trader-Pasetto/run.sh"]
+  ],
+  "visualizers" : [
+    ["visualizer_Olha", "/Users/olha/CLionProjects/visualizer/run.sh"],
+    ["visualizer_Olha2", "/Users/olha/CLionProjects/visualizer/run.sh"]
+  ]
+}

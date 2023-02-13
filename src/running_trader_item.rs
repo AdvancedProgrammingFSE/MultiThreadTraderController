@@ -126,11 +126,13 @@ impl FactoryComponent for RunningTraderItem {
 						
 						let trader_process = std::process::Command::new(self.trader.get_path())
 							.stdout(Stdio::piped()).spawn();
+
+						println!("{:?}", trader_process);
 						
 						if let Ok(process) = trader_process {
 							if let Some(stdout_pipe) = process.stdout {
 								std::process::Command::new(visualizer.get_path())
-									.stdin(stdout_pipe);
+									.stdin(stdout_pipe).spawn();
 							}
 						}
 					}

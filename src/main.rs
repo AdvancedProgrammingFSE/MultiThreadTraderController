@@ -21,8 +21,8 @@ struct JsonFileStructure {
 
 pub fn parse_input_file() -> AppInput{
     
-    let content = fs::read_to_string("./config.json");
-    
+    let content = fs::read_to_string("src/config.json");
+
     if let Ok(c) = content {
         let ss : Result<JsonFileStructure, _> = serde_json::from_str(c.as_str());
         if let Ok(j) = ss {
